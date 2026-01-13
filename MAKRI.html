@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Premium Fidget Studio</title>
+    <style>
+        :root {
+            --bg: #e0e5ec;
+            --shadow-light: #ffffff;
+            --shadow-dark: #a3b1c6;
+            --text: #5a67d8;
+            --accent: #5a67d8;
+        }
+
+        [data-theme="dark"] {
+            --bg: #1d2126;
+            --shadow-light: #2a3037;
+            --shadow-dark: #101215;
+            --text: #a1c4fd;
+            --accent: #a1c4fd;
+        }
+
+        body {
+            background-color: var(--bg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            touch-action: manipulation;
+            transition: background-color 2.5s cubic-bezier(0.4, 0, 0.2, 1), filter 2s ease;
+        }
+
+        /* Cinematic Flash Overlay */
+        #flash-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 200;
+            transition: opacity 1.2s ease-in-out;
+        }
+
+        .progress-container {
+            width: 80vw;
+            max-width: 400px;
+            height: 10px;
+            background: var(--bg);
+            border-radius: 10px;
+            box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #5a67d8, #a1c4fd);
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 10px;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            border: none;
+            background: var(--bg);
+            color: var(--text);
+            box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+            z-index: 10;
+        }
+
+        h1 {
+            color: var(--text);
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+            letter-spacing: 4px;
+            transition: all 1.5s ease;
+        }
+
+        .container {
+            position: relative;
+            padding: 20px;
+            background: var(--bg);
+            border-radius: 30px;
+            box-shadow: 15px 15px 40px var(--shadow-dark), -15px -15px 40px var(--shadow-light);
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            max-width: 90vw;
+            /* Cinematic exit transition */
+            transition: transform 3s cubic-bezier(0.4, 0, 0.2, 1), opacity 2s ease, filter 2s ease;
+        }
+
+        /* The 'Blobs' */
+        .bubble {
+            width: 14vw;
+            height: 14vw;
+            max-width: 70px;
+            max-height: 70px;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            background: var(--bg);
+            box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .bubble::after {
+            content: '';
+            position: absolute;
+            top: 15%; left: 15%; right: 15%; bottom: 15%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color1), var(--color2));
+            opacity: 0.85;
+            transition: transform 0.2s;
+        }
+
+        .bubble.popped {
+            box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+            transform: scale(0.9);
+        }
+
+        .bubble.popped::after { transform: scale(0.7); filter: brightness(0.8); }
+
+        .row-0 { --color1: #ff9a9e; --color2: #fecfef; }
+        .row-1 { --color1: #a1c4fd; --color2: #c2e9fb; }
+        .row-2 { --color1: #84fab0; --color2: #8fd3f4; }
+        .row-3 { --color1: #f6d365; --color2: #fda085; }
+        .row-4 { --color1: #cfd9df; --color2: #e2ebf0; }
+
+        /* SPACE MODE CANVAS */
+        #space-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #0a0a14 0%, #000000 100%);
+            display: none;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 3s ease;
+        }
+
+        .return-btn {
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            cursor: pointer;
+            z-index: 101;
+            display: none;
+            font-weight: bold;
+            letter-spacing: 2px;
+            opacity: 0;
+            transition: opacity 2s ease 2s;
+        }
+
+        /* Transition States */
+        .space-active body { filter: brightness(0.8); background-color: #000; }
+        .space-active .container {
+            opacity: 0;
+            transform: scale(0.2) translateY(-100px) rotateX(45deg);
+            filter: blur(10px);
+            pointer-events: none;
+        }
+        .space-active h1, .space-active .progress-container, .space-active .theme-toggle {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="flash-overlay"></div>
+    <canvas id="space-canvas"></canvas>
+    <button class="return-btn" id="returnBtn">IRANGI PO MYRE</button>
+
+    <button class="theme-toggle" id="themeBtn"></button>
+    <h1>POPPIT</h1>
+
+    <div class="progress-container">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="container" id="board"></div>
+
+    <script>
+        const board = document.getElementById('board');
+        const themeBtn = document.getElementById('themeBtn');
+        const progressFill = document.getElementById('progressFill');
+        const spaceCanvas = document.getElementById('space-canvas');
+        const returnBtn = document.getElementById('returnBtn');
+        const flash = document.getElementById('flash-overlay');
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        let popCount = 0;
+        const targetPops = 100;
+        let spaceMusicOsc;
+        let spaceMusicGain;
+        let warpActive = false;
+
+        themeBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', nextTheme);
+        });
+
+        function playPop() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(500 + Math.random() * 300, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playSpaceMusic() {
+            spaceMusicOsc = audioCtx.createOscillator();
+            spaceMusicGain = audioCtx.createGain();
+            spaceMusicOsc.type = 'triangle';
+            spaceMusicOsc.frequency.setValueAtTime(70, audioCtx.currentTime);
+            spaceMusicOsc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 15);
+            spaceMusicGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            spaceMusicGain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 4);
+            spaceMusicOsc.connect(spaceMusicGain);
+            spaceMusicGain.connect(audioCtx.destination);
+            spaceMusicOsc.start();
+        }
+
+        function handleInteraction(e, bubble) {
+            e.preventDefault();
+            if (!bubble.classList.contains('popped')) {
+                bubble.classList.add('popped');
+                playPop();
+                popCount++;
+                const progress = (popCount / targetPops) * 100;
+                progressFill.style.width = `${progress}%`;
+                if (popCount >= targetPops) enterSpace();
+                if (navigator.vibrate) navigator.vibrate(15);
+                setTimeout(() => bubble.classList.remove('popped'), 2000);
+            }
+        }
+
+        function enterSpace() {
+            warpActive = true;
+            document.body.parentElement.classList.add('space-active');
+            setTimeout(() => { flash.style.opacity = "1"; }, 1200);
+            setTimeout(() => {
+                spaceCanvas.style.display = 'block';
+                setTimeout(() => { 
+                    spaceCanvas.style.opacity = "1"; 
+                    flash.style.opacity = "0";
+                    returnBtn.style.display = 'block';
+                    setTimeout(() => returnBtn.style.opacity = "1", 100);
+                }, 100);
+                initStars();
+                playSpaceMusic();
+                setTimeout(() => { warpActive = false; }, 2000);
+            }, 2400);
+        }
+
+        returnBtn.addEventListener('click', () => {
+            if(spaceMusicGain) {
+                spaceMusicGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+                setTimeout(() => { if(spaceMusicOsc) spaceMusicOsc.stop(); }, 1000);
+            }
+            popCount = 0;
+            progressFill.style.width = '0%';
+            spaceCanvas.style.opacity = "0";
+            returnBtn.style.opacity = "0";
+            setTimeout(() => {
+                document.body.parentElement.classList.remove('space-active');
+                spaceCanvas.style.display = 'none';
+                returnBtn.style.display = 'none';
+            }, 1500);
+        });
+
+        const ctx = spaceCanvas.getContext('2d');
+        let stars = [];
+        function initStars() {
+            spaceCanvas.width = window.innerWidth;
+            spaceCanvas.height = window.innerHeight;
+            stars = [];
+            for(let i=0; i<400; i++) {
+                stars.push({
+                    x: Math.random() * spaceCanvas.width,
+                    y: Math.random() * spaceCanvas.height,
+                    z: Math.random() * spaceCanvas.width,
+                    size: Math.random() * 2,
+                    opacity: Math.random()
+                });
+            }
+            animateStars();
+        }
+
+        function animateStars() {
+            if (spaceCanvas.style.display === 'none') return;
+            ctx.fillStyle = warpActive ? "rgba(0,0,0,0.2)" : "black";
+            ctx.fillRect(0, 0, spaceCanvas.width, spaceCanvas.height);
+            const centerX = spaceCanvas.width / 2;
+            const centerY = spaceCanvas.height / 2;
+
+            stars.forEach(s => {
+                let k = 128 / s.z;
+                let px = (s.x - centerX) * k + centerX;
+                let py = (s.y - centerY) * k + centerY;
+                let speed = warpActive ? 20 : 0.5;
+                s.z -= speed;
+                if (s.z <= 0) {
+                    s.z = spaceCanvas.width;
+                    s.x = Math.random() * spaceCanvas.width;
+                    s.y = Math.random() * spaceCanvas.height;
+                }
+                let size = s.size * k;
+                ctx.fillStyle = `rgba(255, 255, 255, ${s.opacity})`;
+                ctx.beginPath();
+                ctx.arc(px, py, size > 3 ? 3 : size, 0, Math.PI * 2);
+                ctx.fill();
+                if(!warpActive) s.opacity += (Math.random() - 0.5) * 0.1;
+                if(s.opacity < 0.2) s.opacity = 0.2;
+                if(s.opacity > 1) s.opacity = 1;
+            });
+            requestAnimationFrame(animateStars);
+        }
+
+        // Generate the 25 "blobs"
+        for (let i = 0; i < 25; i++) {
+            const bubble = document.createElement('div');
+            const row = Math.floor(i / 5);
+            bubble.className = `bubble row-${row}`;
+            bubble.addEventListener('touchstart', (e) => handleInteraction(e, bubble));
+            bubble.addEventListener('mousedown', (e) => handleInteraction(e, bubble));
+            board.appendChild(bubble);
+        }
+    </script>
+</body>
+</html>
